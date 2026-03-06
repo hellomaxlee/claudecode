@@ -1,6 +1,10 @@
 """
 Fetch SRTM elevation data for trail geometries using the OpenTopoData API.
-Samples points every ~20m along each trail and returns elevations in meters.
+Samples points every ~50m along each trail and returns elevations in meters.
+
+Rate limit: OpenTopoData free tier allows 1 request/second.
+We sleep 1.1s after EVERY batch (not just between batches within a trail)
+and retry up to 3 times with exponential backoff on 429 errors.
 """
 
 import math
@@ -18,7 +22,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def sample_points(geometry, spacing_m=20):
+def sample_points(geometry, spacing_m=50):
     """
     Sample (lat, lon) points every ~spacing_m meters along a trail geometry.
     Uses linear interpolation between OSM nodes. Always includes start and end.
@@ -57,7 +61,9 @@ def sample_points(geometry, spacing_m=20):
 def fetch_elevations(points):
     """
     Fetch SRTM30m elevations for a list of (lat, lon) points from OpenTopoData.
-    Sends batches of 100; sleeps 1s between batches to respect the rate limit.
+    Sends batches of 100. Sleeps 1.1s after every batch to respect the 1 req/sec
+    rate limit — including after the last batch, so the next trail doesn't fire
+    immediately. Retries up to 3 times with exponential backoff on 429 errors.
     Returns a list of elevation values in meters (None where unavailable).
     """
     elevations = []
@@ -66,14 +72,23 @@ def fetch_elevations(points):
     for i in range(0, len(points), batch_size):
         batch = points[i : i + batch_size]
         locations = "|".join(f"{lat},{lon}" for lat, lon in batch)
-        response = requests.get(
-            f"https://api.opentopodata.org/v1/srtm30m?locations={locations}",
-            timeout=30
-        )
-        response.raise_for_status()
+
+        for attempt in range(3):
+            response = requests.get(
+                f"https://api.opentopodata.org/v1/srtm30m?locations={locations}",
+                timeout=30
+            )
+            if response.status_code == 429:
+                wait = 2 ** attempt * 2  # 2s, 4s, 8s
+                print(f"    Rate limited (429), retrying in {wait}s...")
+                time.sleep(wait)
+                continue
+            response.raise_for_status()
+            break
+
         elevations.extend(r["elevation"] for r in response.json()["results"])
-        if i + batch_size < len(points):
-            time.sleep(1)
+        # Always sleep after every batch to maintain 1 req/sec across all trails
+        time.sleep(1.1)
 
     return elevations
 
