@@ -23,7 +23,7 @@ A FastAPI-served website listing all Sugarbush trails with:
 ### Trail Geometry + Official Classification
 - **Source:** OpenStreetMap via Overpass API
 - **Query:** `way["piste:type"="downhill"]` within Sugarbush bounding box
-  - Approx bbox: `44.13, -72.92, 44.17, -72.88`
+  - Bbox covers both Lincoln Peak and Mt. Ellen: `44.12, -72.95, 44.25, -72.84`
 - **OSM difficulty tags → color mapping:**
   | OSM tag           | Color         |
   |-------------------|---------------|
@@ -60,11 +60,14 @@ Each metric is min-max normalized across all trails to a 0–1 scale.
 
 ### Weighted Composite Score
 ```
-score = 0.30 * norm(vertical_drop)
-      + 0.40 * norm(avg_slope)
-      + 0.30 * norm(max_slope)
+score = 0.15 * norm(vertical_drop)
+      + 0.35 * norm(avg_slope)
+      + 0.50 * norm(max_slope)
 ```
-Average slope is weighted highest as it best reflects sustained effort/challenge.
+Weights are derived from NSAA official rating guidelines:
+- **Max slope (50%):** Primary factor per NSAA — trails are rated by their steepest section
+- **Avg slope (35%):** Secondary — sustained difficulty across the full run
+- **Vertical drop (15%):** Not a direct NSAA rating factor; contributes to fatigue but not steepness-based classification
 
 ### Computed Classification Thresholds
 | Score Range | Computed Color  |

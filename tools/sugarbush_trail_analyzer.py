@@ -10,8 +10,9 @@ import time
 import requests
 import numpy as np
 
-# Sugarbush Resort bounding box (lat_min, lon_min, lat_max, lon_max)
-SUGARBUSH_BBOX = (44.13, -72.92, 44.17, -72.88)
+# Sugarbush Resort bounding box covering both Lincoln Peak and Mt. Ellen
+# (lat_min, lon_min, lat_max, lon_max)
+SUGARBUSH_BBOX = (44.12, -72.95, 44.25, -72.84)
 
 # OSM difficulty tag -> display color
 OSM_DIFFICULTY_MAP = {
@@ -239,7 +240,11 @@ def analyze_trails():
         return (arr - arr.min()) / rng if rng > 0 else np.zeros_like(arr)
 
     vd_n, ag_n, ms_n = norm(vd), norm(ag), norm(ms)
-    composite = 0.30 * vd_n + 0.40 * ag_n + 0.30 * ms_n
+    # Weights based on NSAA guidelines: ratings are primarily driven by the
+    # steepest section of the run, with sustained average slope secondary.
+    # Vertical drop is not a direct NSAA rating factor — it contributes to
+    # stamina/fatigue but not steepness-based difficulty classification.
+    composite = 0.15 * vd_n + 0.35 * ag_n + 0.50 * ms_n
 
     for i, result in enumerate(all_results):
         score = float(composite[i])
