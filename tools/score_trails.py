@@ -47,33 +47,16 @@ def compute_metrics(points, elevations):
     }
 
 
-def classify_score(score):
-    """Map a 0–1 composite score to a difficulty color."""
-    if score < 0.25:
-        return "Green"
-    if score < 0.50:
-        return "Blue"
-    if score < 0.75:
-        return "Black"
-    return "Double Black"
-
-
-def verdict(official, computed):
-    """Return Accurate / Overestimated / Underestimated."""
-    if official not in DIFFICULTY_ORDER or computed not in DIFFICULTY_ORDER:
-        return "Unknown"
-    o = DIFFICULTY_ORDER.index(official)
-    c = DIFFICULTY_ORDER.index(computed)
-    if o == c:
-        return "Accurate"
-    return "Overestimated" if o > c else "Underestimated"
-
-
 def score_trails(trails_with_elevations):
     """
-    Compute metrics for each trail, normalize across all trails, apply weighted
-    composite scoring, classify difficulty, and compare to official ratings.
-    Returns a list of result dicts sorted by composite score descending.
+    Compute metrics for each trail, normalize across all trails, and return
+    results with normalized values included so the frontend can recompute
+    composite scores dynamically (e.g. when weight sliders change).
+
+    Classification and verdict are computed client-side using percentile
+    thresholds derived from the official rating distribution.
+
+    Returns a list of result dicts sorted by default composite score descending.
     """
     computed = []
     for trail in trails_with_elevations:
@@ -93,18 +76,21 @@ def score_trails(trails_with_elevations):
         rng = arr.max() - arr.min()
         return (arr - arr.min()) / rng if rng > 0 else np.zeros_like(arr)
 
-    composite = (
-        WEIGHTS["vertical_drop"] * norm(vd)
-        + WEIGHTS["avg_slope"] * norm(ag)
-        + WEIGHTS["max_slope"] * norm(ms)
+    vd_n, ag_n, ms_n = norm(vd), norm(ag), norm(ms)
+
+    # Default composite score using NSAA-derived weights (for initial sort)
+    default_composite = (
+        WEIGHTS["vertical_drop"] * vd_n
+        + WEIGHTS["avg_slope"] * ag_n
+        + WEIGHTS["max_slope"] * ms_n
     )
 
     for i, result in enumerate(computed):
-        score = float(composite[i])
-        computed_color = classify_score(score)
-        result["composite_score"] = round(score, 3)
-        result["computed"] = computed_color
-        result["verdict"] = verdict(result["official"], computed_color)
+        # Include normalized values so the client can recompute with custom weights
+        result["norm_vertical_drop"] = round(float(vd_n[i]), 4)
+        result["norm_avg_slope"] = round(float(ag_n[i]), 4)
+        result["norm_max_slope"] = round(float(ms_n[i]), 4)
+        result["default_score"] = round(float(default_composite[i]), 4)
 
-    computed.sort(key=lambda r: r["composite_score"], reverse=True)
+    computed.sort(key=lambda r: r["default_score"], reverse=True)
     return computed

@@ -5,270 +5,520 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sugarbush Trail Analyzer</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0b120e;
+      --surface:    #111a14;
+      --surface2:   #162019;
+      --border:     #243028;
+      --text:       #cdd9c8;
+      --muted:      #5e7a62;
+      --gold:       #c4a05a;
+      --green:      #4a8c50;
+      --green-bg:   #0f2212;
+      --blue:       #3d7ab5;
+      --blue-bg:    #0d1e30;
+      --black:      #8a8a8a;
+      --black-bg:   #1a1a1a;
+      --dbl:        #9b6ec8;
+      --dbl-bg:     #1e102e;
+      --over:       #c47a3a;
+      --under:      #b8c43a;
+    }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f1923;
-      color: #e8edf2;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(ellipse 120% 40% at 50% 100%, #0d2015 0%, transparent 70%),
+        radial-gradient(ellipse 80%  60% at 20% 110%, #071510 0%, transparent 60%),
+        radial-gradient(ellipse 80%  60% at 80% 110%, #071510 0%, transparent 60%),
+        radial-gradient(ellipse 200% 30% at 50%  85%, #0a1a0f 0%, transparent 100%);
+      color: var(--text);
       min-height: 100vh;
-      padding: 2rem;
+      padding: 2rem 2.5rem 4rem;
     }
 
     header {
       margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.25rem;
     }
 
     header h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #e8f0e4;
     }
+
+    header h1 span { color: var(--gold); }
 
     header p {
-      color: #7a8fa6;
-      margin-top: 0.4rem;
-      font-size: 0.95rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+      font-size: 0.875rem;
     }
 
-    .stats-bar {
-      display: flex;
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
       gap: 1.5rem;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
+      align-items: start;
+    }
+
+    .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+    }
+
+    .card-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
     }
 
     .stat {
-      background: #1a2535;
-      border: 1px solid #2a3a50;
-      border-radius: 8px;
-      padding: 0.75rem 1.25rem;
-      font-size: 0.85rem;
-      color: #7a8fa6;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.6rem 0.75rem;
     }
 
-    .stat span {
-      display: block;
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: #e8edf2;
-      margin-top: 2px;
-    }
+    .stat-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 2px; }
+    .stat-value { font-size: 1.1rem; font-weight: 600; color: #e8f0e4; }
+    .stat-value.over  { color: var(--over); }
+    .stat-value.under { color: var(--under); }
 
-    .controls {
+    .weight-row {
       display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-      align-items: center;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-bottom: 0.85rem;
     }
 
-    .controls select, .controls input {
-      background: #1a2535;
-      border: 1px solid #2a3a50;
-      color: #e8edf2;
-      padding: 0.5rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.9rem;
+    .weight-row:last-of-type { margin-bottom: 0; }
+
+    .weight-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
     }
 
-    .controls label {
-      font-size: 0.85rem;
-      color: #7a8fa6;
+    .weight-name { font-size: 0.82rem; color: var(--text); font-weight: 500; }
+
+    .weight-pct {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--gold);
+      width: 2.8rem;
+      text-align: right;
     }
 
-    table {
+    input[type="range"] {
       width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
     }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--gold);
+      cursor: pointer;
+      border: 2px solid var(--bg);
+      transition: background 0.15s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover { background: #e0bb7a; }
+
+    .weight-sum {
+      text-align: right;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.6rem;
+      padding-top: 0.6rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .weight-sum span { color: var(--gold); font-weight: 700; }
+
+    .justification {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .justification strong { color: var(--text); }
+
+    .classif-note {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .classif-note strong { color: var(--text); }
+
+    .filter-row { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .filter-row label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .filter-row select,
+    .filter-row input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      width: 100%;
+    }
+
+    .main { min-width: 0; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
 
     th {
-      background: #1a2535;
-      color: #7a8fa6;
+      background: var(--surface);
+      color: var(--muted);
       font-weight: 600;
+      font-size: 0.72rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
       text-align: left;
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #2a3a50;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
     }
 
-    th:hover { color: #e8edf2; }
-
-    th .sort-arrow { margin-left: 4px; opacity: 0.4; }
-    th.sorted .sort-arrow { opacity: 1; color: #4a9eff; }
+    th:hover { color: var(--text); }
+    th.sorted { color: var(--gold); }
+    th .arrow { margin-left: 3px; opacity: 0.5; }
+    th.sorted .arrow { opacity: 1; }
 
     td {
-      padding: 0.7rem 1rem;
-      border-bottom: 1px solid #1a2535;
-    }
-
-    tr:hover td { background: #1a2535; }
-
-    /* Color classification badges */
-    .badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 600;
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid #151e18;
       white-space: nowrap;
     }
 
-    .badge-Green        { background: #1a4a1a; color: #4caf50; border: 1px solid #2d7a2d; }
-    .badge-Blue         { background: #1a2f4a; color: #4a9eff; border: 1px solid #2a4a7a; }
-    .badge-Black        { background: #2a2a2a; color: #c8c8c8; border: 1px solid #4a4a4a; }
-    .badge-Double-Black { background: #2a1a2a; color: #c87aff; border: 1px solid #5a2a7a; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
 
-    /* Verdict badges */
-    .verdict-Accurate        { color: #7a8fa6; }
-    .verdict-Overestimated   { color: #ff7a4a; font-weight: 600; }
-    .verdict-Underestimated  { color: #ffd04a; font-weight: 600; }
-
-    .score-bar-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
     }
 
-    .score-bar {
-      height: 6px;
-      border-radius: 3px;
-      background: linear-gradient(90deg, #4caf50, #4a9eff, #c8c8c8, #c87aff);
+    .badge-Green       { background: var(--green-bg); color: var(--green); border: 1px solid #1e4a24; }
+    .badge-Blue        { background: var(--blue-bg);  color: var(--blue);  border: 1px solid #1a3a5a; }
+    .badge-Black       { background: var(--black-bg); color: var(--black); border: 1px solid #333; }
+    .badge-DoubleBlack { background: var(--dbl-bg);   color: var(--dbl);   border: 1px solid #3a1f58; }
+
+    .verdict-Accurate       { color: var(--muted); font-size: 0.8rem; }
+    .verdict-Overestimated  { color: var(--over);  font-size: 0.8rem; font-weight: 600; }
+    .verdict-Underestimated { color: var(--under); font-size: 0.8rem; font-weight: 600; }
+
+    .score-wrap { display: flex; align-items: center; gap: 7px; }
+
+    .score-bar-bg {
+      width: 64px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
       flex-shrink: 0;
     }
 
-    .score-val {
-      font-size: 0.8rem;
-      color: #7a8fa6;
-      width: 3.5rem;
-      text-align: right;
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--green) 0%, var(--blue) 40%, var(--black) 70%, var(--dbl) 100%);
     }
+
+    .score-num { font-size: 0.78rem; color: var(--muted); width: 3rem; text-align: right; }
 
     #loading {
       text-align: center;
-      padding: 4rem;
-      color: #7a8fa6;
+      padding: 5rem 2rem;
+      color: var(--muted);
     }
 
-    #loading .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid #2a3a50;
-      border-top-color: #4a9eff;
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.9s linear infinite;
       margin: 0 auto 1rem;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    #error {
+    #error-box {
       display: none;
-      background: #3a1a1a;
-      border: 1px solid #7a2a2a;
+      background: #1e0f0f;
+      border: 1px solid #5a1a1a;
       border-radius: 8px;
-      padding: 1rem 1.5rem;
-      color: #ff7a7a;
+      padding: 1rem 1.25rem;
+      color: #e07a7a;
       margin-bottom: 1rem;
+    }
+
+    .source-note {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 1rem;
+      opacity: 0.7;
     }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>Sugarbush Trail Analyzer</h1>
-  <p>Topographic analysis of all ski trails — vertical drop, slope angle, and difficulty accuracy</p>
+  <h1>Sugarbush <span>Trail Analyzer</span></h1>
+  <p>Topographic difficulty analysis — Lincoln Peak &amp; Mt. Ellen</p>
 </header>
 
 <div id="loading">
   <div class="spinner"></div>
-  <p>Fetching trail and elevation data — this may take a minute on first load...</p>
+  <p>Fetching trail and elevation data — first load takes a minute or two...</p>
 </div>
 
-<div id="error"></div>
+<div id="error-box"></div>
 
-<div id="main" style="display:none">
-  <div class="stats-bar" id="stats-bar"></div>
+<div id="app" style="display:none">
+  <div class="layout">
 
-  <div class="controls">
-    <label>Filter:
-      <select id="filter-official">
-        <option value="">All difficulties</option>
-        <option value="Green">Green</option>
-        <option value="Blue">Blue</option>
-        <option value="Black">Black</option>
-        <option value="Double Black">Double Black</option>
-      </select>
-    </label>
-    <label>Verdict:
-      <select id="filter-verdict">
-        <option value="">All verdicts</option>
-        <option value="Accurate">Accurate</option>
-        <option value="Overestimated">Overestimated</option>
-        <option value="Underestimated">Underestimated</option>
-      </select>
-    </label>
-    <label>Search: <input id="search" type="text" placeholder="Trail name..." /></label>
+    <div class="sidebar">
+
+      <div class="card">
+        <div class="card-title">Overview</div>
+        <div class="stats-grid" id="stats-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Scoring Weights</div>
+
+        <div class="weight-row">
+          <div class="weight-header">
+            <span class="weight-name">Max Slope</span>
+            <span class="weight-pct" id="pct-max">50%</span>
+          </div>
+          <input type="range" id="w-max" min="0" max="100" value="50" step="1" />
+        </div>
+
+        <div class="weight-row">
+          <div class="weight-header">
+            <span class="weight-name">Avg Slope</span>
+            <span class="weight-pct" id="pct-avg">35%</span>
+          </div>
+          <input type="range" id="w-avg" min="0" max="100" value="35" step="1" />
+        </div>
+
+        <div class="weight-row">
+          <div class="weight-header">
+            <span class="weight-name">Vertical Drop</span>
+            <span class="weight-pct" id="pct-vd">15%</span>
+          </div>
+          <input type="range" id="w-vd" min="0" max="100" value="15" step="1" />
+        </div>
+
+        <div class="weight-sum">Total: <span id="weight-total">100%</span></div>
+
+        <div class="justification">
+          <strong>NSAA basis:</strong> Trails are officially rated by their
+          <strong>steepest section</strong> (max slope) — making it the primary
+          signal. Average slope captures sustained difficulty. Vertical drop
+          reflects stamina but is not a direct NSAA classification criterion.
+          <br><br>
+          Defaults: Max 50% · Avg 35% · Drop 15%
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Classification Method</div>
+        <div class="classif-note">
+          Computed ratings use <strong>percentile thresholds</strong> matched
+          to the official distribution — so the same proportion of trails
+          receive each computed tier as exists in Sugarbush's official ratings.
+          <br><br>
+          Official data from <strong>OpenStreetMap</strong>, mapped to NSAA
+          standard: novice/easy → Green, intermediate → Blue,
+          advanced → Black, expert → Double Black.
+        </div>
+        <div id="dist-breakdown" style="margin-top:0.75rem; font-size:0.75rem; color:var(--muted); line-height:1.8;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Filters</div>
+        <div class="filter-row">
+          <label>Official rating
+            <select id="filter-official">
+              <option value="">All</option>
+              <option value="Green">Green</option>
+              <option value="Blue">Blue</option>
+              <option value="Black">Black</option>
+              <option value="Double Black">Double Black</option>
+            </select>
+          </label>
+          <label>Verdict
+            <select id="filter-verdict">
+              <option value="">All</option>
+              <option value="Accurate">Accurate</option>
+              <option value="Overestimated">Overestimated</option>
+              <option value="Underestimated">Underestimated</option>
+            </select>
+          </label>
+          <label>Search
+            <input id="search" type="text" placeholder="Trail name..." />
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="main">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-col="name">Trail <span class="arrow">↕</span></th>
+              <th data-col="official">Official <span class="arrow">↕</span></th>
+              <th data-col="vertical_drop_ft">Drop (ft) <span class="arrow">↕</span></th>
+              <th data-col="avg_slope_deg">Avg Slope° <span class="arrow">↕</span></th>
+              <th data-col="max_slope_deg">Max Slope° <span class="arrow">↕</span></th>
+              <th data-col="composite_score">Score <span class="arrow">↕</span></th>
+              <th data-col="computed">Computed <span class="arrow">↕</span></th>
+              <th data-col="verdict">Verdict <span class="arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="source-note">
+        Trail geometry from OpenStreetMap · Elevation from OpenTopoData SRTM30m · Classification methodology per NSAA guidelines
+      </div>
+    </div>
+
   </div>
-
-  <table id="trail-table">
-    <thead>
-      <tr>
-        <th data-col="name">Trail <span class="sort-arrow">↕</span></th>
-        <th data-col="official">Official <span class="sort-arrow">↕</span></th>
-        <th data-col="vertical_drop_ft">Vertical Drop (ft) <span class="sort-arrow">↕</span></th>
-        <th data-col="avg_slope_deg">Avg Slope (°) <span class="sort-arrow">↕</span></th>
-        <th data-col="max_slope_deg">Max Slope (°) <span class="sort-arrow">↕</span></th>
-        <th data-col="composite_score">Composite Score <span class="sort-arrow">↕</span></th>
-        <th data-col="computed">Computed <span class="sort-arrow">↕</span></th>
-        <th data-col="verdict">Verdict <span class="sort-arrow">↕</span></th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
 </div>
 
 <script>
-  let allTrails = []
-  let sortCol = "composite_score"
-  let sortAsc = false
+  const DIFFICULTY_ORDER = ['Green', 'Blue', 'Black', 'Double Black']
+  const COLOR_MAP = { Green: '#4a8c50', Blue: '#3d7ab5', Black: '#8a8a8a', 'Double Black': '#9b6ec8' }
 
-  const DIFFICULTY_ORDER = ["Green", "Blue", "Black", "Double Black"]
+  let allTrails = []
+  let officialDist = {}
+  let sortCol = 'composite_score'
+  let sortAsc = false
+  const weights = { max: 50, avg: 35, vd: 15 }
 
   function badgeClass(color) {
-    return "badge badge-" + color.replace(" ", "-")
+    return 'badge badge-' + color.replace(' ', '')
+  }
+
+  // Percentile-based classification: thresholds match the official tier distribution
+  function computeClassifications(trails) {
+    if (!trails.length) return
+    const wMax = weights.max / 100
+    const wAvg = weights.avg / 100
+    const wVd  = weights.vd  / 100
+
+    trails.forEach(t => {
+      t.composite_score = wMax * t.norm_max_slope
+                        + wAvg * t.norm_avg_slope
+                        + wVd  * t.norm_vertical_drop
+    })
+
+    const sorted = [...trails].sort((a, b) => a.composite_score - b.composite_score)
+    const n = sorted.length
+    const gFrac = officialDist['Green']        || 0
+    const bFrac = officialDist['Blue']         || 0
+    const kFrac = officialDist['Black']        || 0
+
+    const gThresh = sorted[Math.max(0, Math.round(gFrac * n) - 1)]?.composite_score ?? 0
+    const bThresh = sorted[Math.max(0, Math.round((gFrac + bFrac) * n) - 1)]?.composite_score ?? 1
+    const kThresh = sorted[Math.max(0, Math.round((gFrac + bFrac + kFrac) * n) - 1)]?.composite_score ?? 1
+
+    trails.forEach(t => {
+      const s = t.composite_score
+      if (s <= gThresh)      t.computed = 'Green'
+      else if (s <= bThresh) t.computed = 'Blue'
+      else if (s <= kThresh) t.computed = 'Black'
+      else                   t.computed = 'Double Black'
+
+      const o = DIFFICULTY_ORDER.indexOf(t.official)
+      const c = DIFFICULTY_ORDER.indexOf(t.computed)
+      t.verdict = o === c ? 'Accurate' : (o > c ? 'Overestimated' : 'Underestimated')
+    })
   }
 
   function renderTable() {
-    const filterOff = document.getElementById("filter-official").value
-    const filterVerd = document.getElementById("filter-verdict").value
-    const search = document.getElementById("search").value.toLowerCase()
+    computeClassifications(allTrails)
 
-    let trails = allTrails.filter(t => {
-      if (filterOff && t.official !== filterOff) return false
-      if (filterVerd && t.verdict !== filterVerd) return false
-      if (search && !t.name.toLowerCase().includes(search)) return false
-      return true
-    })
+    const fo = document.getElementById('filter-official').value
+    const fv = document.getElementById('filter-verdict').value
+    const fs = document.getElementById('search').value.toLowerCase()
+
+    let trails = allTrails.filter(t =>
+      (!fo || t.official === fo) &&
+      (!fv || t.verdict === fv) &&
+      (!fs || t.name.toLowerCase().includes(fs))
+    )
 
     trails.sort((a, b) => {
       let av = a[sortCol], bv = b[sortCol]
-      if (sortCol === "official" || sortCol === "computed") {
+      if (sortCol === 'official' || sortCol === 'computed') {
         av = DIFFICULTY_ORDER.indexOf(av)
         bv = DIFFICULTY_ORDER.indexOf(bv)
       }
-      if (typeof av === "string") av = av.toLowerCase()
-      if (typeof bv === "string") bv = bv.toLowerCase()
-      if (av < bv) return sortAsc ? -1 : 1
-      if (av > bv) return sortAsc ? 1 : -1
-      return 0
+      if (typeof av === 'string') { av = av.toLowerCase(); bv = bv.toLowerCase() }
+      return sortAsc ? (av < bv ? -1 : av > bv ? 1 : 0)
+                     : (av > bv ? -1 : av < bv ? 1 : 0)
     })
 
-    const tbody = document.getElementById("tbody")
-    tbody.innerHTML = trails.map(t => `
+    document.getElementById('tbody').innerHTML = trails.map(t => `
       <tr>
         <td>${t.name}</td>
         <td><span class="${badgeClass(t.official)}">${t.official}</span></td>
@@ -276,70 +526,116 @@
         <td>${t.avg_slope_deg.toFixed(1)}</td>
         <td>${t.max_slope_deg.toFixed(1)}</td>
         <td>
-          <div class="score-bar-wrap">
-            <div class="score-bar" style="width:${Math.round(t.composite_score * 80)}px"></div>
-            <span class="score-val">${t.composite_score.toFixed(3)}</span>
+          <div class="score-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill" style="width:${Math.round(t.composite_score * 100)}%"></div>
+            </div>
+            <span class="score-num">${t.composite_score.toFixed(3)}</span>
           </div>
         </td>
         <td><span class="${badgeClass(t.computed)}">${t.computed}</span></td>
-        <td><span class="verdict-${t.verdict}">${t.verdict}</span></td>
+        <td><span class="verdict-${t.verdict.replace(' ', '')}">${t.verdict}</span></td>
       </tr>
-    `).join("")
+    `).join('')
+
+    renderStats()
   }
 
-  function renderStats(trails) {
-    const total = trails.length
-    const over = trails.filter(t => t.verdict === "Overestimated").length
-    const under = trails.filter(t => t.verdict === "Underestimated").length
-    const accurate = trails.filter(t => t.verdict === "Accurate").length
-    const maxVD = Math.max(...trails.map(t => t.vertical_drop_ft))
-    const steepest = trails.find(t => t.vertical_drop_ft === maxVD)
-
-    document.getElementById("stats-bar").innerHTML = `
-      <div class="stat">Total trails <span>${total}</span></div>
-      <div class="stat">Accurately rated <span>${accurate}</span></div>
-      <div class="stat">Overestimated <span style="color:#ff7a4a">${over}</span></div>
-      <div class="stat">Underestimated <span style="color:#ffd04a">${under}</span></div>
-      <div class="stat">Biggest drop <span>${maxVD.toLocaleString()} ft</span></div>
+  function renderStats() {
+    const total    = allTrails.length
+    const accurate = allTrails.filter(t => t.verdict === 'Accurate').length
+    const over     = allTrails.filter(t => t.verdict === 'Overestimated').length
+    const under    = allTrails.filter(t => t.verdict === 'Underestimated').length
+    const maxDrop  = Math.max(...allTrails.map(t => t.vertical_drop_ft))
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat"><div class="stat-label">Trails</div><div class="stat-value">${total}</div></div>
+      <div class="stat"><div class="stat-label">Accurate</div><div class="stat-value">${accurate}</div></div>
+      <div class="stat"><div class="stat-label">Overest.</div><div class="stat-value over">${over}</div></div>
+      <div class="stat"><div class="stat-label">Underest.</div><div class="stat-value under">${under}</div></div>
+      <div class="stat" style="grid-column:span 2">
+        <div class="stat-label">Max vertical drop</div>
+        <div class="stat-value">${maxDrop.toLocaleString()} ft</div>
+      </div>
     `
   }
 
-  // Sort headers
-  document.querySelectorAll("th[data-col]").forEach(th => {
-    th.addEventListener("click", () => {
+  // Weight sliders — adjusting one redistributes the others proportionally
+  const sliders = { max: document.getElementById('w-max'), avg: document.getElementById('w-avg'), vd: document.getElementById('w-vd') }
+  const pcts    = { max: document.getElementById('pct-max'), avg: document.getElementById('pct-avg'), vd: document.getElementById('pct-vd') }
+
+  function updateWeights(changed) {
+    const newVal = parseInt(sliders[changed].value)
+    const others = Object.keys(weights).filter(k => k !== changed)
+    const remaining = 100 - newVal
+    const otherSum = others.reduce((s, k) => s + weights[k], 0)
+    weights[changed] = newVal
+
+    if (otherSum === 0) {
+      others.forEach(k => { weights[k] = Math.round(remaining / others.length) })
+    } else {
+      let assigned = 0
+      others.forEach((k, i) => {
+        weights[k] = i === others.length - 1
+          ? remaining - assigned
+          : Math.round((weights[k] / otherSum) * remaining)
+        assigned += weights[k]
+      })
+    }
+
+    Object.keys(weights).forEach(k => {
+      weights[k] = Math.max(0, Math.min(100, weights[k]))
+      sliders[k].value = weights[k]
+      pcts[k].textContent = weights[k] + '%'
+    })
+
+    document.getElementById('weight-total').textContent =
+      Object.values(weights).reduce((s, v) => s + v, 0) + '%'
+
+    renderTable()
+  }
+
+  Object.keys(sliders).forEach(k => sliders[k].addEventListener('input', () => updateWeights(k)))
+
+  document.querySelectorAll('th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
       const col = th.dataset.col
-      if (sortCol === col) {
-        sortAsc = !sortAsc
-      } else {
-        sortCol = col
-        sortAsc = col === "name"
-      }
-      document.querySelectorAll("th").forEach(h => h.classList.remove("sorted"))
-      th.classList.add("sorted")
-      th.querySelector(".sort-arrow").textContent = sortAsc ? "↑" : "↓"
+      sortAsc = sortCol === col ? !sortAsc : col === 'name'
+      sortCol = col
+      document.querySelectorAll('th').forEach(h => h.classList.remove('sorted'))
+      th.classList.add('sorted')
+      th.querySelector('.arrow').textContent = sortAsc ? '↑' : '↓'
       renderTable()
     })
   })
 
-  document.getElementById("filter-official").addEventListener("change", renderTable)
-  document.getElementById("filter-verdict").addEventListener("change", renderTable)
-  document.getElementById("search").addEventListener("input", renderTable)
+  document.getElementById('filter-official').addEventListener('change', renderTable)
+  document.getElementById('filter-verdict').addEventListener('change', renderTable)
+  document.getElementById('search').addEventListener('input', renderTable)
 
-  // Fetch data
-  fetch("/api/trails")
+  fetch('/api/trails')
     .then(r => r.json())
     .then(data => {
-      allTrails = data
-      document.getElementById("loading").style.display = "none"
-      document.getElementById("main").style.display = "block"
-      renderStats(data)
+      allTrails    = data.trails
+      officialDist = data.official_distribution
+
+      document.getElementById('dist-breakdown').innerHTML =
+        Object.entries(officialDist)
+          .sort((a, b) => DIFFICULTY_ORDER.indexOf(a[0]) - DIFFICULTY_ORDER.indexOf(b[0]))
+          .map(([k, v]) => {
+            const count = Math.round(v * allTrails.length)
+            return `<span style="color:${COLOR_MAP[k] || '#ccc'}">${k}</span>: ${Math.round(v * 100)}% (${count} trails)`
+          })
+          .join('<br>')
+
+      document.getElementById('loading').style.display = 'none'
+      document.getElementById('app').style.display = 'block'
       renderTable()
     })
     .catch(err => {
-      document.getElementById("loading").style.display = "none"
-      const el = document.getElementById("error")
-      el.style.display = "block"
-      el.textContent = "Failed to load trail data: " + err.message
+      document.getElementById('loading').style.display = 'none'
+      const el = document.getElementById('error-box')
+      el.style.display = 'block'
+      el.textContent = 'Failed to load trail data: ' + err.message
     })
 </script>
 </body>
