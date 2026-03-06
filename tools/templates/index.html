@@ -253,15 +253,96 @@
     }
 
     .source-note { font-size: 0.7rem; color: var(--muted); margin-top: 1rem; opacity: 0.7; }
+
+    /* ── Description panel ───────────────────────────────────────────────────── */
+
+    .about {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: var(--muted);
+      transition: background 0.4s, border-color 0.4s;
+    }
+
+    .about strong { color: var(--text); font-weight: 600; }
+    .about .accent { color: var(--accent); }
+
+    .about-toggle {
+      background: none; border: none; cursor: pointer;
+      font-size: 0.72rem; color: var(--accent); padding: 0;
+      margin-top: 0.5rem; display: inline-block; letter-spacing: 0.5px;
+      text-transform: uppercase; font-weight: 700;
+    }
+
+    .about-body { margin-top: 0.65rem; }
+    .about-body.hidden { display: none; }
+
+    /* ── Mobile ───────────────────────────────────────────────────────────────── */
+
+    @media (max-width: 768px) {
+      body { padding: 1rem 1rem 3rem; }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+      }
+
+      header h1 { font-size: 1.25rem; white-space: normal; }
+
+      #resort-select { width: 100%; }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar { order: 2; }
+      .main    { order: 1; }
+
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
+
+      td, th { padding: 0.5rem 0.6rem; font-size: 0.78rem; }
+
+      /* Hide less critical columns on small screens */
+      th:nth-child(4), td:nth-child(4),
+      th:nth-child(7), td:nth-child(7) { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+
+      /* Also hide avg slope on very small screens */
+      th:nth-child(5), td:nth-child(5) { display: none; }
+    }
   </style>
 </head>
 <body>
 
 <header>
-  <h1 id="resort-title">Run <span>Analyzer</span></h1>
+  <h1 id="resort-title"><span>Run Analyzer</span></h1>
   <select id="resort-select"></select>
   <span class="resort-location" id="resort-location"></span>
 </header>
+
+<div class="about">
+  <span>
+    <strong>How it works:</strong> This app scores ski runs using real terrain data — slope steepness, vertical drop, and elevation — and compares that to each resort's official difficulty rating.
+    Use the <span class="accent">scoring sliders</span> to match your personal sensitivities: weight Max Slope heavily if short steep pitches are what gets you, or Avg Slope if sustained steepness wears you out more.
+  </span>
+  <button class="about-toggle" onclick="this.nextElementSibling.classList.toggle('hidden'); this.textContent = this.nextElementSibling.classList.contains('hidden') ? 'More ↓' : 'Less ↑'">More ↓</button>
+  <div class="about-body hidden">
+    <br>
+    <strong>Ratings are relative to each resort.</strong> A Black Diamond at Camelback (PA) is a very different mountain than a Black Diamond at Jackson Hole (WY). This app preserves that — it scores runs within each resort and assigns computed ratings to match the same Green / Blue / Black / Double Black distribution as the resort's official ratings. So you're always comparing runs within the same mountain, not across resorts.
+    <br><br>
+    <strong>Verdict column:</strong> <strong style="color:var(--over)">Overestimated</strong> means the resort rates a run harder than the terrain data suggests — it may be more approachable than its badge implies. <strong style="color:var(--under)">Underestimated</strong> means it's tougher terrain than its rating lets on. <strong>Accurate</strong> means the computed and official ratings agree.
+    <br><br>
+    Trail geometry is from <strong>OpenStreetMap</strong>. Elevation from <strong>SRTM30m</strong> via OpenTopoData. Slope angles per <strong>NSAA</strong> trail rating guidelines.
+  </div>
+</div>
 
 <div id="loading">
   <div class="spinner"></div>
@@ -454,7 +535,7 @@
         resortZones  = data.resort.zones
 
         document.getElementById('resort-title').innerHTML =
-          `${data.resort.name} Run <span>Analyzer</span>`
+          `${data.resort.name} <span>Run Analyzer</span>`
         document.title = data.resort.name + ' Run Analyzer'
         document.getElementById('resort-location').textContent = data.resort.location
 
